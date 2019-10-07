@@ -50,4 +50,15 @@ object Expressions extends App {
     if (x > y) "Hello" else "Bye"
   }
 
+  // 1. difference between "hello world" : String and println("hello world") : Unit
+  // 2. what are the values for
+  val someValue = {
+    2 > 3
+  } // false
+
+  val someOtherValue = {
+    if (someValue) 239 else 456
+    42
+  } // 42
+
 }
