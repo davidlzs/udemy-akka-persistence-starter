@@ -33,12 +33,12 @@ object Recursion extends App {
    */
   def greeting(name: String, n : Int): String = {
     @tailrec
-    def greetingHelper(name: String, n: Int, accumulator: String ) : String = {
+    def concatenateTailrec(name: String, n: Int, accumulator: String ) : String = {
       if (n == 0) accumulator
-      else greetingHelper(name, n - 1, accumulator + name)
+      else concatenateTailrec(name, n - 1, accumulator + name)
     }
 
-    greetingHelper(name, n, "")
+    concatenateTailrec(name, n, "")
   }
 
   println(greeting("hello", 10))
@@ -48,11 +48,12 @@ object Recursion extends App {
    */
   def isPrimitive(n: Int): Boolean = {
     @tailrec
-    def isPrimitiveHelper(n: Int, t: Int, accumulator: Boolean) : Boolean = {
-      if (t == 1) accumulator
-      else isPrimitiveHelper(n, t - 1, n % t != 0 && accumulator)
+    def isPrimeTailrec(t: Int, isStillPrime: Boolean) : Boolean = {
+      if (!isStillPrime) false
+      else if (t == 1) true
+      else isPrimeTailrec(t - 1, n % t != 0 && isStillPrime)
     }
-    isPrimitiveHelper(n, n / 2, true)
+    isPrimeTailrec(n / 2, true)
   }
 
   println(isPrimitive(1009))
@@ -60,12 +61,27 @@ object Recursion extends App {
      3. Fibonacci
    */
   def fibonacci(n : Int) : Int = {
-    def fibonacciHelper(n : Int, accumulator1: Int, accumulator2: Int): Int = {
-      if (n <= 2) accumulator1
-      else fibonacciHelper(n - 1, accumulator1 + accumulator2, accumulator1 )
+    @tailrec
+    def fibonacciTailrec(i : Int, last: Int, nextLast: Int): Int = {
+      if (i <= 2) last
+      else fibonacciTailrec(i - 1, last + nextLast, last )
     }
-    fibonacciHelper(n, 1, 1)
+    fibonacciTailrec(n, 1, 1)
   }
 
   println(fibonacci(8))
+
+  def fibonacci2(n: Int) : Int = {
+    def fibonacci2Tailrec(i : Int, last: Int, nextLast: Int) : Int = {
+      if (i >= n) last
+      else fibonacci2Tailrec(i + 1, last + nextLast, last)
+    }
+
+    if (n <= 2) 1
+    else fibonacci2Tailrec(2, 1, 1)
+  }
+
+  println(fibonacci2(1))
+  println(fibonacci2(2))
+  println(fibonacci2(8))
 }
