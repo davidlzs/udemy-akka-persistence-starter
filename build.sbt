@@ -11,6 +11,8 @@ lazy val cassandraVersion = "0.91"
 lazy val json4sVersion = "3.2.11"
 lazy val protobufVersion = "3.6.1"
 
+lazy val akkaHttpVersion = "10.1.5"
+
 // some libs are available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
@@ -32,4 +34,9 @@ libraryDependencies ++= Seq(
 
   // Google Protocol Buffers
   "com.google.protobuf" % "protobuf-java"  % protobufVersion,
+
+  // akka http
+  "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+  "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
+  "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion,
 )
