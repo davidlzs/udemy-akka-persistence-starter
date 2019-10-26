@@ -2,8 +2,9 @@ package http.part3_highlevelserver
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{PathMatcher1, PathMatchers, Route}
 import akka.stream.ActorMaterializer
 
 object HighLevelIntro extends App {
@@ -48,5 +49,23 @@ object HighLevelIntro extends App {
      )
    } // routing tree
 
+  val matcher: PathMatcher1[Option[Int]] =
+    "foo" / "bar" / "X" ~ IntNumber.? / ("edit" | "create")
+  println(matcher(Path("foo/bar/X42/edit or foo/bar/X/create")))
+
+  println(PathMatchers.DoubleNumber(Path("123")))
+
+
+  val date = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+  println("2004-01-20" match {
+    case date(year, month, day) => s"$year was a good year for PLs."
+  })
+
+  val event = """gateway\.(.+)\.device\.(.+)\.(.+)""".r
+  println("gateway.1234.device.abc.lock" match {
+    case event(gatewayId, deviceId, source) => s"$gatewayId, $deviceId, $source"
+  })
+
   Http().bindAndHandle(chainedRoute, "localhost", 8080)
+
 }
