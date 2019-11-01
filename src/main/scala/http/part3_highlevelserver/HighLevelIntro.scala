@@ -4,8 +4,10 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import akka.http.scaladsl.server.{PathMatcher1, PathMatchers, Route}
+import akka.http.scaladsl.server.{PathMatcher, PathMatcher1, PathMatchers, Route}
 import akka.stream.ActorMaterializer
+
+import scala.util.matching.Regex
 
 object HighLevelIntro extends App {
   implicit val system = ActorSystem("HighLevelIntro")
@@ -55,7 +57,11 @@ object HighLevelIntro extends App {
 
   println(PathMatchers.DoubleNumber(Path("123")))
 
+  println(PathMatcher("[a-z]{2}".r)(Path("ca")))
 
+  // type Route = RequestContext => Future[RouteResult]
+
+  // Regex
   val date = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
   println("2004-01-20" match {
     case date(year, month, day) => s"$year was a good year for PLs."
