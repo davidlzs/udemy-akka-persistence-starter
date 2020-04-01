@@ -6,7 +6,7 @@ import akka.stream.scaladsl.{Sink, Source}
 
 import scala.util.{Failure, Success}
 
-object SingleStreamAsyncParellismExample extends App {
+object SingleStreamAsyncParallelismExample extends App {
   implicit val system = ActorSystem("singleStreamSystem")
   implicit val materializer = ActorMaterializer()
   implicit val dispatcher = system.dispatcher
