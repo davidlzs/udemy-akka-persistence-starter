@@ -5,24 +5,25 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Supervision.Decider
-import akka.stream.{ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{RestartSource, Sink, Source}
 import spray.json._
 
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 case class Id(value: String)
 
-object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport  {
+object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport {
 
-  val decider : Decider = {
-    case DatabaseBusyException => Supervision.Resume
-    case _ => Supervision.Stop
-  }
+  /* val decider : Decider = {
+     case DatabaseBusyException => Supervision.Resume
+     case _ => Supervision.Stop
+   }
+  */
   implicit val system = ActorSystem()
   implicit val ec = system.dispatcher
-  implicit val mat = ActorMaterializer(ActorMaterializerSettings(system).withSupervisionStrategy(decider))
+  implicit val mat = ActorMaterializer() //ActorMaterializerSettings(system).withSupervisionStrategy(decider))
 
   implicit def responseFormat = jsonFormat1(Response.apply)
 
@@ -39,22 +40,31 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport  {
     Id("007597b8-1abd-484c-adf1-a0ea09837d1e")
   )
 
-  val aggregate = Source(ids)
-    .mapAsync(parallelism = 4) { id =>
-      Http().singleRequest(HttpRequest(uri = s"http://localhost:8080/${id.value}"))
+  val aggregate = RestartSource.withBackoff(
+    minBackoff = 10 milliseconds,
+    maxBackoff = 30 seconds,
+    randomFactor = 0.2
+  ) {
+    () => {
+      println(s"Retrying: ${System.currentTimeMillis()}")
+      Source(ids)
+        .mapAsync(parallelism = 4) { id =>
+          Http().singleRequest(HttpRequest(uri = s"http://localhost:8080/${id.value}"))
+        }
+        .mapAsync(parallelism = 4) {
+          case HttpResponse(StatusCodes.OK, _, entity, _) =>
+            Unmarshal(entity).to[Response]
+          case HttpResponse(StatusCodes.InternalServerError, _, _, _) =>
+            throw DatabaseBusyException
+          case HttpResponse(statusCode, _, _, _) =>
+            println(statusCode)
+            throw DatabaseUnexpectedException(statusCode)
+        }
     }
-    .mapAsync(parallelism = 4) {
-      case HttpResponse(StatusCodes.OK, _, entity, _) =>
-        Unmarshal(entity).to[Response]
-      case HttpResponse(StatusCodes.InternalServerError, _, _, _) =>
-        throw DatabaseBusyException
-      case HttpResponse(statusCode, _, _, _) =>
-        println(statusCode)
-        throw DatabaseUnexpectedException(statusCode)
-    }
-    .map(_.value)
-//    .withAttributes(ActorAttributes.supervisionStrategy(decider))
-    .runWith(Sink.fold(0)(_ + _))
+  }
+  .map(_.value)
+  //    .withAttributes(ActorAttributes.supervisionStrategy(decider))
+  .runWith(Sink.fold(0)(_ + _))
 
   aggregate.onComplete {
     case Success(sum) => println(s"Sum : $sum")

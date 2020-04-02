@@ -1,19 +1,22 @@
 package maximizing_throughput_and_scalability.error_handling
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Directives.{complete, get, path}
 import akka.stream.ActorMaterializer
+import com.typesafe.config.ConfigFactory
 
 import scala.io.StdIn
 import scala.util.Random
 
 object HttpServer extends App {
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem("httpServer", ConfigFactory.parseString("""akka.loglevel="DEBUG""""))
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
+  val log = Logging.getLogger(system, this)
   val random = Random
 
   def body(value: Int): String = s"""{"value":$value}"""
@@ -24,9 +27,11 @@ object HttpServer extends App {
     path(Id) { id =>
       get {
         if (random.nextInt % 2 == 1) {
+          log.error("Service failed")
           complete(StatusCodes.InternalServerError)
         }
         else {
+          log.debug("Service succeeded")
           complete(
             StatusCodes.OK,
             HttpEntity(ContentTypes.`application/json`,
