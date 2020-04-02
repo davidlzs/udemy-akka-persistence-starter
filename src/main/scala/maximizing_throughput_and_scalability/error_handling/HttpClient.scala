@@ -5,7 +5,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
+import akka.stream.Supervision.Decider
+import akka.stream.{ActorAttributes, ActorMaterializer, Supervision}
 import akka.stream.scaladsl.{Sink, Source}
 import spray.json._
 
@@ -15,6 +16,10 @@ case class Id(value: String)
 
 object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport  {
 
+  val decider : Decider = {
+    case DatabaseBusyException => Supervision.Resume
+    case _ => Supervision.Stop
+  }
   implicit val system = ActorSystem()
   implicit val ec = system.dispatcher
   implicit val mat = ActorMaterializer()
@@ -36,9 +41,7 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport  {
 
   val aggregate = Source(ids)
     .mapAsync(parallelism = 4) { id =>
-      val uri = s"http://localhost:8080/${id.value}"
-      println(uri)
-      Http().singleRequest(HttpRequest(uri = uri))
+      Http().singleRequest(HttpRequest(uri = s"http://localhost:8080/${id.value}"))
     }
     .mapAsync(parallelism = 4) {
       case HttpResponse(StatusCodes.OK, _, entity, _) =>
@@ -50,6 +53,7 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport  {
         throw DatabaseUnexpectedException(statusCode)
     }
     .map(_.value)
+    .withAttributes(ActorAttributes.supervisionStrategy(decider))
     .runWith(Sink.fold(0)(_ + _))
 
   aggregate.onComplete {
