@@ -35,7 +35,7 @@ object HttpServer extends App {
           complete(
             StatusCodes.OK,
             HttpEntity(ContentTypes.`application/json`,
-              body(random.nextInt(101)))
+              body(10)) //random.nextInt(101)))
           )
         }
       }
