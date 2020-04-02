@@ -23,7 +23,7 @@ object HttpServer extends App {
   val route =
     path(Id) { id =>
       get {
-        if (random.nextInt % 2 > 10) {
+        if (random.nextInt % 2 == 1) {
           complete(StatusCodes.InternalServerError)
         }
         else {
