@@ -6,7 +6,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Supervision.Decider
-import akka.stream.{ActorAttributes, ActorMaterializer, Supervision}
+import akka.stream.{ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.stream.scaladsl.{Sink, Source}
 import spray.json._
 
@@ -22,7 +22,7 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport  {
   }
   implicit val system = ActorSystem()
   implicit val ec = system.dispatcher
-  implicit val mat = ActorMaterializer()
+  implicit val mat = ActorMaterializer(ActorMaterializerSettings(system).withSupervisionStrategy(decider))
 
   implicit def responseFormat = jsonFormat1(Response.apply)
 
@@ -53,7 +53,7 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport  {
         throw DatabaseUnexpectedException(statusCode)
     }
     .map(_.value)
-    .withAttributes(ActorAttributes.supervisionStrategy(decider))
+//    .withAttributes(ActorAttributes.supervisionStrategy(decider))
     .runWith(Sink.fold(0)(_ + _))
 
   aggregate.onComplete {
