@@ -1,6 +1,7 @@
 package maximizing_throughput_and_scalability.error_handling
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, StatusCodes}
@@ -24,6 +25,7 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport {
   implicit val system = ActorSystem()
   implicit val ec = system.dispatcher
   implicit val mat = ActorMaterializer() //ActorMaterializerSettings(system).withSupervisionStrategy(decider))
+  val log = Logging.getLogger(system, this)
 
   implicit def responseFormat = jsonFormat1(Response.apply)
 
@@ -40,18 +42,18 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport {
     Id("007597b8-1abd-484c-adf1-a0ea09837d1e")
   )
 
-  val aggregate = RestartSource.withBackoff(
-    minBackoff = 10 milliseconds,
-    maxBackoff = 30 seconds,
-    randomFactor = 0.2
-  ) {
-    () => {
-      println(s"Retrying: ${System.currentTimeMillis()}")
-      Source(ids)
-        .mapAsync(parallelism = 4) { id =>
-          Http().singleRequest(HttpRequest(uri = s"http://localhost:8080/${id.value}"))
-        }
-        .mapAsync(parallelism = 4) {
+  def getResponse(id: Id) = {
+    RestartSource.withBackoff(
+      minBackoff = 10 milliseconds,
+      maxBackoff = 30 seconds,
+      randomFactor = 0.2
+    ) {
+      () => {
+        val uri = s"http://localhost:8080/${id.value}"
+        log.info(s"Retrying: ${System.currentTimeMillis()} for: $uri")
+        Source.fromFuture(
+          Http().singleRequest(HttpRequest(uri = uri))
+        ).mapAsync(parallelism = 1) {
           case HttpResponse(StatusCodes.OK, _, entity, _) =>
             Unmarshal(entity).to[Response]
           case HttpResponse(StatusCodes.InternalServerError, _, _, _) =>
@@ -60,11 +62,17 @@ object HttpClient extends App with DefaultJsonProtocol with SprayJsonSupport {
             println(statusCode)
             throw DatabaseUnexpectedException(statusCode)
         }
+      }
     }
+      .runWith(Sink.head)
+      .recover {case _ => throw StreamFailedAfterMaxRetriesException}
   }
-  .map(_.value)
-  //    .withAttributes(ActorAttributes.supervisionStrategy(decider))
-  .runWith(Sink.fold(0)(_ + _))
+
+  val aggregate = Source(ids)
+    .mapAsync(parallelism = 4)(getResponse)
+    .map(_.value)
+    //    .withAttributes(ActorAttributes.supervisionStrategy(decider))
+    .runWith(Sink.fold(0)(_ + _))
 
   aggregate.onComplete {
     case Success(sum) => println(s"Sum : $sum")
@@ -77,5 +85,7 @@ object DatabaseBusyException extends Exception
 case class DatabaseUnexpectedException(statusCode: StatusCode) extends Exception
 
 case class Response(value: Int)
+
+object StreamFailedAfterMaxRetriesException extends Exception
 
 
