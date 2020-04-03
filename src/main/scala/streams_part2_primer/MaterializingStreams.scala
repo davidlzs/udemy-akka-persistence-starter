@@ -30,9 +30,56 @@ object MaterializingStreams extends App {
   val simpleSink = Sink.foreach(println)
   val graph: RunnableGraph[Future[Done]] = simpleSource.viaMat(simpleFlow)(Keep.right).toMat(simpleSink)(Keep.right)
 
+/*
   graph.run().onComplete {
     case Success(done) => println(s"$done")
     case Failure(exception) => println(s"$exception")
   }
+*/
+
+  // sugars
+/*
+  val sum: Future[Int] = Source(1 to 10).runReduce[Int](_ + _) //Source(1 to 10).runWith(Sink.reduce[Int]((a, b) => a + b))
+  sum.onComplete{
+    case Success(value) => println(s"sum is : $value")
+    case Failure(exception) => println(s"failed to sum: $exception")
+  }
+*/
+
+  // backward
+  Sink.foreach(println).runWith(Source.single(42))
+
+  // both ways
+  Flow[Int].map(x => x * 2).runWith(simpleSource, simpleSink)
+
+  /**
+    * - return the last element of a source (Sink.last)
+    * - compute the total word count out a stream of sentences
+    *   - map, fold, reduce
+    */
+
+  val elementSource = Source(1 to 10)
+  val lastSink = Sink.last[Int]
+  //option 1:
+//   elementSource.toMat(lastSink)(Keep.right).run()
+  //option 2:
+  elementSource.runWith(lastSink)
+    .onComplete{
+    case Success(value) => println(s"last value is: $value")
+    case Failure(exception) => println(s"failed to get last element: $exception")
+  }
+
+  val sentenceSource = Source(List("the first sentence", "another a sentence", "yet another sentence"))
+  val toWordCount = Flow[String].map(x => x.split(" ").length)
+  val countSink = Sink.reduce[Int]((a, b) => a + b)
+
+  //option 1
+  sentenceSource.viaMat(toWordCount)(Keep.right).toMat(countSink)(Keep.right)
+    .run()
+    .onComplete{
+      case Success(value) => println(s"total words is is: $value")
+      case Failure(exception) => println(s"failed to get total words: $exception")
+    }
+
 }
 
