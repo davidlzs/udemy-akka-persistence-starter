@@ -69,17 +69,28 @@ object MaterializingStreams extends App {
     case Failure(exception) => println(s"failed to get last element: $exception")
   }
 
-  val sentenceSource = Source(List("the first sentence", "another a sentence", "yet another sentence"))
-  val toWordCount = Flow[String].map(x => x.split(" ").length)
-  val countSink = Sink.reduce[Int]((a, b) => a + b)
+  val sentenceSource = Source(List("the first sentence", "another a sentence", "yet another sentence", "you got it"))
+  //option 1:
+//  val wordCountFlow = Flow[String].map(x => x.split(" ").length)
+  //option 2:
+  val wordCountFlow = Flow[String].fold[Int](0)((a, b) => a + b.split(" ").length)
+  val totalCountSink = Sink.reduce[Int]((a, b) => a + b)
 
   //option 1
-  sentenceSource.viaMat(toWordCount)(Keep.right).toMat(countSink)(Keep.right)
+  sentenceSource.viaMat(wordCountFlow)(Keep.right).toMat(totalCountSink)(Keep.right)
     .run()
     .onComplete{
-      case Success(value) => println(s"total words is is: $value")
-      case Failure(exception) => println(s"failed to get total words: $exception")
+      case Success(value) => println(s"option1 total word count is: $value")
+      case Failure(exception) => println(s"option1 failed to get total words: $exception")
     }
 
+  //option 2
+  sentenceSource.fold[Int](0)((a, s) => a + s.split(" ").length)
+    .reduce[Int]((a, b) => a + b)
+    .runWith(Sink.head)
+    .onComplete{
+      case Success(value) => println(s"option2 total word count is: $value")
+      case Failure(exception) => println(s"option2 failed to get total words: $exception")
+    }
 }
 
