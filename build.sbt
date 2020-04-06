@@ -39,5 +39,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % cassandraVersion % Test,
 
   // Google Protocol Buffers
-  "com.google.protobuf" % "protobuf-java"  % protobufVersion
+  "com.google.protobuf" % "protobuf-java"  % protobufVersion,
+
+  // Play
+  "com.typesafe.play" %% "play" % "2.5.18"
 )
