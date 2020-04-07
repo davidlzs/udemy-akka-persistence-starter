@@ -1,12 +1,14 @@
 package actors_and_streams
 
 import actors_and_streams.Total.Increment
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
+import com.typesafe.scalalogging.Logger
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
@@ -18,24 +20,25 @@ object Total {
 
 }
 
-class Total extends Actor {
+class Total extends Actor with ActorLogging {
   var total: Long = 0
 
   override def receive: Receive = {
     case Increment(value) =>
       total = total + value
+      log.debug("Total is: {}", total)
   }
 }
 
 
 object Messages {
-
+  val logger = Logger("Messages")
   def parse(messages: Seq[String]): Measurements = {
     Measurements(
       messages.map { message =>
         implicit val measurementMessageFormat = Json.format[MeasurementMessage]
         implicit val measurementContainerMessageFormat = Json.format[MeasurementContainerMessage]
-        println(message)
+        logger.debug("{}", message)
         Json.parse(message).as[MeasurementContainerMessage]
       }.flatMap(msg => {
         val id = msg.id
@@ -57,7 +60,7 @@ object Messages {
 
 
 case class Measurements(measurements: Seq[Measurement]) {
-  var sum: Long = 100
+  var sum: Long = measurements.length
 }
 
 case class Measurement(id: String, timestamp: Long, signal: String, value: Float)
@@ -71,6 +74,7 @@ object MaintainingStateActor extends App {
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
+  val logger = Logging.getLogger(system, this)
 
   val total = system.actorOf(Props[Total], "total")
 
@@ -96,7 +100,7 @@ object MaintainingStateActor extends App {
   val route =
     path("measurements" / JavaUUID) { id =>
       get {
-        println(s"Receiving WindTurbineData form: $id")
+        logger.info("Receiving WindTurbineData form: {}", id)
         handleWebSocketMessages(measurementsWebSocket)
       }
     }

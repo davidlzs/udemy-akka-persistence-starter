@@ -42,5 +42,10 @@ libraryDependencies ++= Seq(
   "com.google.protobuf" % "protobuf-java"  % protobufVersion,
 
   // Play
-  "com.typesafe.play" %% "play" % "2.5.18"
+  "com.typesafe.play" %% "play" % "2.6.15",
+
+  // scala logging
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
+  "org.slf4j"      %  "slf4j-api"       %  "1.7.28",
+  "ch.qos.logback" %  "logback-classic" % "1.2.3",
 )
