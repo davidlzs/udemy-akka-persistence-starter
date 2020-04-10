@@ -9,7 +9,7 @@ lazy val leveldbjniVersion = "1.8"
 lazy val postgresVersion = "42.2.2"
 lazy val cassandraVersion = "1.0.0-RC1"
 lazy val protobufVersion = "3.6.1"
-lazy val akkaHttpVersion = "10.1.10"
+lazy val akkaHttpVersion = "10.1.11"
 
 // some libs are available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
@@ -47,9 +47,15 @@ libraryDependencies ++= Seq(
 
   // scala logging
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
-  "org.slf4j"      %  "slf4j-api"       %  "1.7.28",
+  "org.slf4j"      %  "slf4j-api"       %  "1.7.30",
   "ch.qos.logback" %  "logback-classic" % "1.2.3",
 
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
 
+)
+
+// Kamon
+libraryDependencies ++= Seq(
+  "io.kamon" %% "kamon-bundle" % "2.1.0",
+  "io.kamon" %% "kamon-zipkin" % "2.1.0"
 )

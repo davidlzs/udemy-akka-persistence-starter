@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import com.typesafe.scalalogging.Logger
+import kamon.Kamon
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
@@ -33,6 +34,7 @@ class Total extends Actor with ActorLogging {
 
 object Messages {
   val logger = Logger("Messages")
+
   def parse(messages: Seq[String]): Measurements = {
     Measurements(
       messages.map { message =>
@@ -71,6 +73,8 @@ case class MeasurementContainerMessage(id: String, timestamp: Long, measurements
 
 
 object MaintainingStateActor extends App {
+  Kamon.init()
+
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
