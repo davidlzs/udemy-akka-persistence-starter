@@ -44,6 +44,26 @@ object ChunkedGzipUpload {
 
     val bindingFuture = Http().bindAndHandle(route, "localhost", 9999)
 
+    clientRequest()
+
+    bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
+  }
+
+  private def clientRequest() = {
+
+    val config =
+      ConfigFactory.parseString(
+        """
+          |akka.loglevel = debug
+          |akka.http.server.log-unencrypted-network-bytes = 1000
+          |akka.http.client.log-unencrypted-network-bytes = 1000
+        """.stripMargin
+      ).withFallback(ConfigFactory.defaultApplication())
+
+    implicit val system = ActorSystem("my-system", config)
+    implicit val materializer = ActorMaterializer()
+    implicit val executionContext = system.dispatcher
+
     val testDataSource = Source("This is " :: "my" :: " teststring" :: Nil map (ByteString(_, "utf8")))
     val uncompressedRequest =
       HttpRequest(
@@ -57,7 +77,6 @@ object ChunkedGzipUpload {
     val response = Await.result(responseFut, 10.seconds)
     println("Got response")
     println(response)
-
-    bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
+    system.terminate()
   }
 }
