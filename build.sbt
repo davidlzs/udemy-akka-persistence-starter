@@ -10,6 +10,7 @@ lazy val postgresVersion = "42.2.2"
 lazy val cassandraVersion = "1.0.0-RC1"
 lazy val protobufVersion = "3.6.1"
 lazy val akkaHttpVersion = "10.1.11"
+lazy val scalaTestVersion = "3.0.5"
 
 // some libs are available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
@@ -19,10 +20,12 @@ libraryDependencies ++= Seq(
   // HTTP
   "com.typesafe.akka" %% "akka-http"   % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion,
   "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion,
 
   "com.typesafe.akka"          %% "akka-actor"       % akkaVersion,
+  "com.typesafe.akka"          %% "akka-testkit"       % akkaVersion,
   "com.typesafe.akka"          %% "akka-persistence" % akkaVersion,
 
   "com.typesafe.akka"          %% "akka-actor-typed" % akkaVersion,
@@ -31,7 +34,7 @@ libraryDependencies ++= Seq(
   "org.iq80.leveldb"            % "leveldb"          % leveldbVersion,
   "org.fusesource.leveldbjni"   % "leveldbjni-all"   % leveldbjniVersion,
 
-  // JDBC with PostgreSQL 
+  // JDBC with PostgreSQL
   "org.postgresql" % "postgresql" % postgresVersion,
   "com.github.dnvriend" %% "akka-persistence-jdbc" % "3.4.0",
 
@@ -49,6 +52,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
   "org.slf4j"      %  "slf4j-api"       %  "1.7.30",
   "ch.qos.logback" %  "logback-classic" % "1.2.3",
+
+  "org.scalatest" %% "scalatest" % scalaTestVersion,
 
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
 
