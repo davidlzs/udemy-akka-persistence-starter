@@ -13,7 +13,11 @@
         </encoder>
     </appender>
 
-    <root level="debug">
+    <!-- debug level for akka http -->
+    <!--
+    <logger name="akka.http" level="debug" />
+    -->
+    <root level="info">
         <appender-ref ref="console"/>
         <appender-ref ref="file"/>
     </root>
